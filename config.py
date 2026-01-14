@@ -1,6 +1,4 @@
-import os
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 class Settings(BaseSettings):
     
@@ -8,12 +6,8 @@ class Settings(BaseSettings):
     video_rtmp_host: str
     video_rtmp_port: int
     
-    # 接收VeRTC推送音频流的RTMP服务器地址和端口
-    audio_rtmp_host: str
-    audio_rtmp_port: int
-    
     # 服务器配置
-    app_name: str = "DriftSee WebSocket Server"
+    app_name: str = "JUSI Device WebSocket Server"
     app_version: str = "1.5.0"
     host: str = "0.0.0.0"
     port: int = 9000  # WebSocket端点与HTTP API端点共用同一端口
@@ -25,15 +19,10 @@ class Settings(BaseSettings):
     heartbeat_timeout: int = 180       # 3分钟心跳超时
     
     # 安全配置
-    secret_key: str = "your_secret key"
+    secret_key: str = "your-secret-key-here"
     
-    # 数据库配置
-    # DATABASE_URL: str = "postgresql+asyncpg://user:password@"
+    # 数据库/缓存配置
     redis_url: str = "redis://jusi:jusi2025@172.18.245.192:6379"  # 测试环境 172.18.245.192
-    
-    # 文件上传配置
-    max_file_size: int = 10 * 1024 * 1024  # 10MB
-    allowed_image_types: list = ["image/jpeg", "image/png"]
     
     class Config:
         # 指定 .env 文件的编码

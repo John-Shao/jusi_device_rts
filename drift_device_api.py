@@ -1,15 +1,10 @@
 
 import json
 import logging
-from datetime import datetime
-from typing import Optional, AsyncGenerator
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, APIRouter
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-import uvicorn
+from typing import Optional
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter
 
-from config import settings
+from manager import manager
 from device_handler import DeviceMessageHandler
 
 
