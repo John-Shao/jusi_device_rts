@@ -1,11 +1,14 @@
 
 import json
 import logging
-from typing import Optional
-from fastapi import WebSocket, WebSocketDisconnect, APIRouter
-
+from fastapi import (
+    WebSocket,
+    WebSocketDisconnect,
+    APIRouter, 
+    BackgroundTasks,
+    )
 from connection_manager import connectionManager
-from device_handler import DeviceMessageHandler
+from drift_message_handler import driftMessageHandler
 
 
 logger = logging.getLogger(__name__)
@@ -20,35 +23,43 @@ async def drift_websocket(
     device_sn: str,
     websocket: WebSocket,
     device_id: str,
-    language: str = "zh-CN"
+    background_tasks: BackgroundTasks,
+    language: str = "zh-CN",
     ):
     """Drift 设备 WebSocket 连接端点"""
-    '''
-    # 设备认证
-    is_authenticated = await authenticate_device(token, device_id)
-    if not is_authenticated:
-        await websocket.close(code=1008, reason="认证失败")
-        return
-    '''
+
+    # TODO：设备认证
 
     # 建立连接
     connection_id = await connectionManager.connect(websocket, room_id, device_sn, device_id, language)
-    
+    # 添加后台任务处理连接消息
+    background_tasks.add_task(
+        handle_connection_message,
+        connection_id,
+        websocket,
+    )
+
+# 处理单个设备连接发送的消息
+async def handle_connection_message(
+    connection_id: str,
+    websocket: WebSocket,
+    ):
+    """处理设备连接"""
     try:
         while True:
             # 接收消息
             message_data = await websocket.receive_json()
-            logger.debug(f"收到消息: {json.dumps(message_data, indent=2)}")
+            logger.debug(f"收到消息: {json.dumps(message_data, indent=2, ensure_ascii=False)}")
             
             # 处理消息
-            response = await DeviceMessageHandler.handle_message(
+            response = await driftMessageHandler.handle_message(
                 message_data, connection_id, websocket
             )
             
             # 发送响应
             if response:
                 await websocket.send_json(response)
-                logger.debug(f"发送响应: {json.dumps(response, indent=2)}")
+                logger.debug(f"发送响应: {json.dumps(response, indent=2, ensure_ascii=False)}")
             
     except WebSocketDisconnect as e:
         logger.info(f"设备断开连接: {connection_id}, 代码: {e.code}")

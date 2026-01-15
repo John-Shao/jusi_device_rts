@@ -49,6 +49,7 @@ class Resolution(str, Enum):
     RES_720P = "720P"
     RES_WVGA = "WVGA"
 
+# 基础消息格式（设备发送的消息、发送给设备的消息）
 class BaseMessage(BaseModel):
     """基础消息模型"""
     type: MessageType
@@ -56,7 +57,7 @@ class BaseMessage(BaseModel):
     deviceId: str = None
     playId: str = None
     code: Optional[int] = 0
-    data: Optional[Dict[str, Any]] = None
+    data: Optional[Dict[str, Any]] = {}
     
     @field_validator('deviceId')
     def validate_device_id(cls, v):

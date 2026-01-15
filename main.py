@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from log_mw import RequestLoggingMiddleware
-from drift_device_api import drift_router
+from drift_device_wss import drift_router
 import uvicorn
 
 

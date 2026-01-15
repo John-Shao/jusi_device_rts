@@ -1,22 +1,18 @@
-import json
 import logging
-from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Optional
 from fastapi import WebSocket
 
 from models import (
-    BaseMessage, DeviceInfoMessage, GetRtmpMessage, GetScreenMessage,
-    HeartbeatMessage, DeviceJoinMessage, EventType, MessageType, DeviceInfo
+    BaseMessage, EventType, MessageType, DeviceInfo
 )
-from connection_manager import ConnectionManager
+from connection_manager import connectionManager
 from config import settings
-from auth_handler import authenticate_device
 import file_uploader
 
 
 logger = logging.getLogger(__name__)
 
-class DeviceMessageHandler:
+class DriftMessageHandler:
     """设备消息处理器"""
     
     @staticmethod
@@ -32,11 +28,11 @@ class DeviceMessageHandler:
             
             # 根据消息类型处理
             if message.type == MessageType.NOTIFY:
-                return await DeviceMessageHandler._handle_notify(
+                return await DriftMessageHandler._handle_notify(
                     message, connection_id, websocket
                 )
             elif message.type == MessageType.DEVICE_CONTROL:
-                return await DeviceMessageHandler._handle_device_control(
+                return await DriftMessageHandler._handle_device_control(
                     message, connection_id, websocket
                 )
             else:
@@ -63,7 +59,7 @@ class DeviceMessageHandler:
         """处理 notify 类型消息"""
         
         # 更新心跳时间
-        await ConnectionManager.update_heartbeat(connection_id)
+        await connectionManager.update_heartbeat(connection_id)
         
         if message.event == EventType.JOIN:
             # 心跳消息
@@ -72,7 +68,7 @@ class DeviceMessageHandler:
             
         elif message.event == EventType.DEVICE_INFO:
             # 设备信息上报
-            return await DeviceMessageHandler._handle_device_info(
+            return await DriftMessageHandler._handle_device_info(
                 message, connection_id
             )
         else:
@@ -94,19 +90,19 @@ class DeviceMessageHandler:
         
         if message.event == EventType.GET_RTMP:
             # 获取 RTMP 地址
-            return await DeviceMessageHandler._get_rtmp_address(
+            return await DriftMessageHandler._get_rtmp_address(
                 message, connection_id
             )
             
         elif message.event == EventType.GET_SCREEN:
             # 获取截图地址
-            return await DeviceMessageHandler._get_screen_address(
+            return await DriftMessageHandler._get_screen_address(
                 message, connection_id
             )
             
         elif message.event == EventType.POWER_OFF:
             # 关机请求
-            return await DeviceMessageHandler._handle_power_off(
+            return await DriftMessageHandler._handle_power_off(
                 message, connection_id
             )
             
@@ -133,7 +129,7 @@ class DeviceMessageHandler:
             device_info = DeviceInfo(**device_info_data)
             
             # 更新管理器中的设备信息
-            ConnectionManager.update_device_info(connection_id, device_info)
+            connectionManager.update_device_info(connection_id, device_info)
             
             logger.info(f"设备信息更新: {connection_id}")
             
@@ -164,7 +160,7 @@ class DeviceMessageHandler:
         """处理获取 RTMP 地址请求"""
         try:
             # 获取设备状态
-            device_status = ConnectionManager.device_status.get(connection_id)
+            device_status = connectionManager.device_status.get(connection_id)
             if not device_status:
                 raise ValueError("设备未连接")
             
@@ -173,7 +169,7 @@ class DeviceMessageHandler:
             rtmp_url = f"rtmp://{settings.video_rtmp_host}:{settings.video_rtmp_port}/live/{stream_id}"
             
             # 获取设备信息中的分辨率等设置
-            device_info = ConnectionManager.get_device_info(connection_id)
+            device_info = connectionManager.get_device_info(connection_id)
             
             return {
                 "type": "device_notify",
@@ -205,7 +201,7 @@ class DeviceMessageHandler:
     ) -> dict:
         """处理获取截图地址请求"""
         try:
-            device_status = ConnectionManager.device_status.get(connection_id)
+            device_status = connectionManager.device_status.get(connection_id)
             if not device_status:
                 raise ValueError("设备未连接")
             
@@ -293,3 +289,5 @@ class DeviceMessageHandler:
                 "code": -1,
                 "error_msg": str(e)
             }
+
+driftMessageHandler = DriftMessageHandler()
