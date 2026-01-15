@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from log_mw import RequestLoggingMiddleware
-from drift_device_api import device_router
+from drift_device_api import drift_router
 import uvicorn
 
 
@@ -66,9 +66,8 @@ app.add_middleware(
 # 添加Log中间件
 app.add_middleware(RequestLoggingMiddleware)
 
-
 # 注册路由
-app.include_router(device_router, prefix=settings.api_vstr, tags=["Device WSS"])
+app.include_router(drift_router, prefix=settings.drift_api_prefix, tags=["Device WSS"])
 
 # 处理根路径请求
 @app.get("/")

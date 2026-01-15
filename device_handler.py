@@ -8,7 +8,7 @@ from models import (
     BaseMessage, DeviceInfoMessage, GetRtmpMessage, GetScreenMessage,
     HeartbeatMessage, DeviceJoinMessage, EventType, MessageType, DeviceInfo
 )
-from manager import manager
+from connection_manager import ConnectionManager
 from config import settings
 from auth_handler import authenticate_device
 import file_uploader
@@ -63,7 +63,7 @@ class DeviceMessageHandler:
         """处理 notify 类型消息"""
         
         # 更新心跳时间
-        await manager.update_heartbeat(connection_id)
+        await ConnectionManager.update_heartbeat(connection_id)
         
         if message.event == EventType.JOIN:
             # 心跳消息
@@ -133,7 +133,7 @@ class DeviceMessageHandler:
             device_info = DeviceInfo(**device_info_data)
             
             # 更新管理器中的设备信息
-            manager.update_device_info(connection_id, device_info)
+            ConnectionManager.update_device_info(connection_id, device_info)
             
             logger.info(f"设备信息更新: {connection_id}")
             
@@ -164,7 +164,7 @@ class DeviceMessageHandler:
         """处理获取 RTMP 地址请求"""
         try:
             # 获取设备状态
-            device_status = manager.device_status.get(connection_id)
+            device_status = ConnectionManager.device_status.get(connection_id)
             if not device_status:
                 raise ValueError("设备未连接")
             
@@ -173,7 +173,7 @@ class DeviceMessageHandler:
             rtmp_url = f"rtmp://{settings.video_rtmp_host}:{settings.video_rtmp_port}/live/{stream_id}"
             
             # 获取设备信息中的分辨率等设置
-            device_info = manager.get_device_info(connection_id)
+            device_info = ConnectionManager.get_device_info(connection_id)
             
             return {
                 "type": "device_notify",
@@ -205,7 +205,7 @@ class DeviceMessageHandler:
     ) -> dict:
         """处理获取截图地址请求"""
         try:
-            device_status = manager.device_status.get(connection_id)
+            device_status = ConnectionManager.device_status.get(connection_id)
             if not device_status:
                 raise ValueError("设备未连接")
             

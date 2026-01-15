@@ -2,9 +2,12 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     
-    # 接收X5设备推送视频流的RTMP服务器地址和端口
-    video_rtmp_host: str
-    video_rtmp_port: int
+    # DriftSee 相关配置
+    video_rtmp_host: str  # 接收X5设备推送视频流的RTMP服务器地址
+    video_rtmp_port: int  # 接收X5设备推送视频流的RTMP服务器端口
+    drift_api_prefix: str = "/api/ws/v1"  # DriftSee API 前缀
+
+
     
     # 服务器配置
     app_name: str = "JUSI Device WebSocket Server"

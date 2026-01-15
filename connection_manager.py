@@ -112,7 +112,7 @@ class ConnectionManager:
         await websocket.accept()
         
         # 生成连接ID
-        connection_id = f"{room_id}:{device_sn}:{device_id}"
+        connection_id = device_id  # f"{room_id}:{device_sn}:{device_id}"
         
         # 保存连接
         self.active_connections[connection_id] = websocket
@@ -248,4 +248,4 @@ class ConnectionManager:
 '''
 全局连接管理器
 '''
-manager = ConnectionManager()
+connectionManager = ConnectionManager()

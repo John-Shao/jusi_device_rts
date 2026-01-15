@@ -4,25 +4,25 @@ import logging
 from typing import Optional
 from fastapi import WebSocket, WebSocketDisconnect, APIRouter
 
-from manager import manager
+from connection_manager import connectionManager
 from device_handler import DeviceMessageHandler
 
 
 logger = logging.getLogger(__name__)
 
-device_router = APIRouter()
+drift_router = APIRouter()
 
-# 设备 WebSocket 连接端点，websocket_server_url=ws://jusiai.cn:8000
+# 设备 WebSocket 连接端点（websocket_server_url）
 # /api/ws/v1/manyRoom/f2374f8400a763e03e35745d71b01275/74TNABDGNAA0YW01/device/00a4b5697e3d16796b818d656ccea433/zh-CN
-@device_router.websocket("/api/ws/v1/manyRoom/{room_id}/{device_sn}/device/{device_id}/{language}")
-async def device_websocket(
+@drift_router.websocket("/manyRoom/{room_id}/{device_sn}/device/{device_id}/{language}")
+async def drift_websocket(
     websocket: WebSocket,
     room_id: str,
     device_sn: str,
     device_id: str,
     language: Optional[str] = None
     ):
-    """设备 WebSocket 连接端点"""
+    """Drift 设备 WebSocket 连接端点"""
     '''
     # 设备认证
     is_authenticated = await authenticate_device(token, device_id, device_sn, room_id)
@@ -32,7 +32,7 @@ async def device_websocket(
     '''
 
     # 建立连接
-    connection_id = await manager.connect(websocket, room_id, device_sn, device_id)
+    connection_id = await connectionManager.connect(websocket, room_id, device_sn, device_id)
     
     try:
         while True:
@@ -52,17 +52,17 @@ async def device_websocket(
             
     except WebSocketDisconnect as e:
         logger.info(f"设备断开连接: {connection_id}, 代码: {e.code}")
-        await manager.disconnect(connection_id)
+        await connectionManager.disconnect(connection_id)
     except json.JSONDecodeError as e:
         logger.error(f"JSON 解析错误: {e}")
-        await manager.disconnect(
+        await connectionManager.disconnect(
             connection_id,
             code=1007,
             reason="消息格式错误"
         )
     except Exception as e:
         logger.error(f"处理 WebSocket 时出错: {e}")
-        await manager.disconnect(
+        await connectionManager.disconnect(
             connection_id,
             code=1011,
             reason="服务器内部错误"
