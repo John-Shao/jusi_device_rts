@@ -13,11 +13,11 @@ from drift_message_handler import handle_device_message
 
 logger = logging.getLogger(__name__)
 
-drift_router = APIRouter()
+drift_websocket_router = APIRouter()
 
 # 设备 WebSocket 连接端点（websocket_server_url）
 # /api/ws/v1/manyRoom/f2374f8400a763e03e35745d71b01275/74TNABDGNAA0YW01/device/00a4b5697e3d16796b818d656ccea433/zh-CN
-@drift_router.websocket("/manyRoom/{room_id}/{device_sn}/device/{device_id}/{language}")
+@drift_websocket_router.websocket("/manyRoom/{room_id}/{device_sn}/device/{device_id}/{language}")
 async def drift_websocket(
     room_id: str,
     device_sn: str,

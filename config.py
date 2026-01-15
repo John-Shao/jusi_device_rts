@@ -5,7 +5,8 @@ class Settings(BaseSettings):
     # DriftSee 相关配置
     video_rtmp_host: str  # 接收X5设备推送视频流的RTMP服务器地址
     video_rtmp_port: int  # 接收X5设备推送视频流的RTMP服务器端口
-    drift_api_prefix: str = "/api/ws/v1"  # DriftSee API 前缀
+    drift_wss_prefix: str = "/api/ws/v1"  # DriftSee WebSocket Server API 前缀
+    drift_api_prefix: str = "/api/v1"  # DriftSee Cloud Control API 前缀
     
     # 服务器配置
     app_name: str = "JUSI Device WebSocket Server"
