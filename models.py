@@ -88,8 +88,8 @@ class DeviceStatus(BaseModel):
     """设备状态模型"""
     device_id: str = Field("", description="设备ID")
     device_info: Optional[DeviceInfo] = None  # 设备信息
-    connection_time: str = Field(current_timestamp_s(), description="连接时间")
-    last_heartbeat: str = Field(current_timestamp_s(), description="最后心跳时间")
+    connection_time: int = Field(current_timestamp_s(), description="连接时间")
+    last_heartbeat: int = Field(current_timestamp_s(), description="最后心跳时间")
 
 class DeviceJoinMessage(BaseMessage):
     """设备连接消息"""

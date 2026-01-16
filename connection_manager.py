@@ -113,8 +113,6 @@ class ConnectionManager:
         self._device_status[device_id] = DeviceStatus(
             device_id=device_id,
             device_info=device_info,
-            connection_time=datetime.now(),
-            last_heartbeat=datetime.now(),
         )
         
         logger.info(f"设备建立连接: {device_id}")
@@ -169,9 +167,8 @@ class ConnectionManager:
         else:
             logger.error(f"更新心跳时间失败：设备连接 {device_id} 不存在")
     
-    # 发送消息
+    # 发送消息到指定设备
     async def send_message(self, device_id: str, message: dict):
-        """发送消息到指定连接"""
         logger.debug(f"发送消息: {json.dumps(message, indent=2, ensure_ascii=False)}")
         if device_id in self._active_connections:
             try:
