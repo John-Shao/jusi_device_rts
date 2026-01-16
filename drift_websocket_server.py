@@ -6,6 +6,7 @@ from fastapi import (
     WebSocketDisconnect,
     APIRouter, 
     BackgroundTasks,
+    WebSocketException,
     )
 from connection_manager import connectionManager
 from drift_websocket_handler import handle_device_message
@@ -32,49 +33,33 @@ async def drift_websocket(
 
     # 建立连接
     await connectionManager.connect(websocket, room_id, device_sn, device_id, language)
-    # 添加后台任务处理连接消息
-    background_tasks.add_task(
-        handle_connection_message,
-        device_id,
-        websocket,
-    )
+    # 接收并处理连接中的消息
+    await handle_connection_message(device_id)
 
 # 处理单个设备连接发送的消息
 async def handle_connection_message(
     device_id: str,
-    websocket: WebSocket,
     ):
     """处理设备连接"""
     try:
         while True:
+            if not connectionManager.connected(device_id):
+                break
             # 接收消息
-            message_data = await websocket.receive_json()
+            message_data = await connectionManager.receive_message(device_id)
             logger.debug(f"收到消息: {json.dumps(message_data, indent=2, ensure_ascii=False)}")
             
             # 处理消息
-            response = await handle_device_message(
-                message_data, device_id, websocket
-            )
+            response = await handle_device_message(message_data, device_id)
             
             # 发送响应
             if response:
-                await websocket.send_json(response)
+                await connectionManager.send_message(device_id, response)
                 logger.debug(f"发送响应: {json.dumps(response, indent=2, ensure_ascii=False)}")
-            
-    except WebSocketDisconnect as e:
-        logger.info(f"设备断开连接: {device_id}, 代码: {e.code}")
-        await connectionManager.disconnect(device_id)
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON 解析错误: {e}")
-        await connectionManager.disconnect(
-            device_id,
-            code=1007,
-            reason="消息格式错误"
-        )
     except Exception as e:
         logger.error(f"处理 WebSocket 时出错: {e}")
         await connectionManager.disconnect(
             device_id,
             code=1011,
-            reason="服务器内部错误"
+            reason=f"{e}"
         )

@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     
     # WebSocket 配置
     websocket_ping_interval: int = 20  # 秒
-    websocket_ping_timeout: int = 30   # 秒
+    websocket_ping_timeout: int = 80   # 秒
     heartbeat_timeout: int = 180       # 3分钟心跳超时
     
     # 数据库/缓存配置

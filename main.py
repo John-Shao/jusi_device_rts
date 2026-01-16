@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from log_mw import RequestLoggingMiddleware
+from connection_manager import connectionManager
 from drift_websocket_server import drift_websocket_router
 from drift_control_server import drift_cloudctrl_router
 import uvicorn
@@ -26,23 +27,28 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # 启动事件
     logger.info(f"启动 {settings.app_name} v{settings.app_version}")
-    
-    # 连接 Redis
-    #await manager.connect_redis()
-    
-    # 启动心跳监控
-    #await manager.start_heartbeat_monitor()
-    
+
+    # 连接redis缓存
+    # connectionManager.connect_redis()
+
+    heartbeat_monitor_task = await connectionManager.start_heartbeat_monitor()
+
     logger.info("应用启动完成")
     
     yield  # 应用运行中
     
     # 关闭事件
     logger.info("应用正在关闭...")
+
+    if heartbeat_monitor_task:
+        heartbeat_monitor_task.cancel()
     
     # 关闭所有 WebSocket 连接
     #for device_id in list(manager.active_connections.keys()):
     #    await manager.disconnect(device_id, reason="服务器关闭")
+
+    # 断开redis缓存
+    # connectionManager.disconnect_redis()
     
     logger.info("应用已关闭")
 

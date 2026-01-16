@@ -1,6 +1,5 @@
 import logging
 from typing import Optional
-from fastapi import WebSocket
 from models import (
     BaseMessage, EventType, MessageType, DeviceInfo
 )
@@ -14,7 +13,6 @@ logger = logging.getLogger(__name__)
 async def handle_device_message(
     message_data: dict,
     device_id: str,
-    websocket: WebSocket
     ) -> Optional[dict]:
     """处理设备消息"""
     try:
@@ -23,13 +21,9 @@ async def handle_device_message(
         
         # 根据消息类型处理
         if message.type == MessageType.D2S_NOTIFY:
-            return await handle_notify_message(
-                message, device_id, websocket
-            )
+            return await handle_notify_message(message, device_id)
         elif message.type == MessageType.D2S_DEVICE_CONTROL:
-            return await handle_device_control(
-                message, device_id, websocket
-            )
+            return await handle_device_control(message, device_id)
         else:
             logger.warning(f"不支持的消息类型: {message.type}")
             err_msg = BaseMessage(
@@ -57,7 +51,6 @@ async def handle_device_message(
 async def handle_notify_message(
     message: BaseMessage,
     device_id: str,
-    websocket: WebSocket
     ) -> Optional[dict]:
     # 更新心跳时间
     await connectionManager.update_heartbeat(device_id)
@@ -85,7 +78,6 @@ async def handle_notify_message(
 async def handle_device_control(
     message: BaseMessage,
     device_id: str,
-    websocket: WebSocket
     ) -> Optional[dict]:
     if message.event == EventType.GET_RTMP:
         # 获取 RTMP 地址
