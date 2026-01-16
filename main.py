@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from log_mw import RequestLoggingMiddleware
 from drift_websocket_server import drift_websocket_router
-from drift_cloudcontrol_server import drift_cloudcontrol_router
+from drift_cloudctrl_server import drift_cloudctrl_router
 import uvicorn
 
 
@@ -67,12 +67,12 @@ app.add_middleware(RequestLoggingMiddleware)
 
 # 注册路由
 app.include_router(drift_websocket_router, prefix=settings.drift_wss_prefix, tags=["Drift WebSocket Server"])
-app.include_router(drift_cloudcontrol_router, prefix=settings.drift_api_prefix, tags=["Drift Cloud Control"])
+app.include_router(drift_cloudctrl_router, prefix=settings.drift_api_prefix, tags=["Drift Cloud Control"])
 
 # 处理根路径请求
 @app.get("/")
 async def root():
-    return {"message": "JUSI Device WebSocket Server"}
+    return {"message": "JUSI Device Real-Time Signaling Server"}
 
 
 # 启动应用

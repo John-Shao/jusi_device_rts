@@ -1,15 +1,11 @@
 import logging
 from typing import Optional
-from unittest.mock import Base
 from fastapi import WebSocket
-from py import log
-
 from models import (
     BaseMessage, EventType, MessageType, DeviceInfo
 )
 from connection_manager import connectionManager
 from config import settings
-import file_uploader
 
 
 logger = logging.getLogger(__name__)
@@ -159,10 +155,10 @@ async def get_rtmp_address(
         rtmp_url = f"rtmp://{settings.video_rtmp_host}:{settings.video_rtmp_port}/live/{connection_id}"
         
         # 获取设备信息中的分辨率等设置
-        device_info = connectionManager.get_device_info(connection_id)
-        if not device_info:
+        device_status = connectionManager.get_device_status(connection_id)
+        if not device_status:
             raise ValueError(f"设备 {connection_id} 未连接")
-
+        device_info = device_status.device_info
         ret_msg = BaseMessage(
             type=MessageType.S2D_DEVICE_NOTIFY,
             event=message.event,
@@ -195,7 +191,7 @@ async def get_screen_address(
     ) -> dict:
     """处理获取截图地址请求"""
     try:
-        device_status = connectionManager.device_status.get(connection_id)
+        device_status = connectionManager._device_status.get(connection_id)
         if not device_status:
             raise ValueError(f"设备 {connection_id} 未连接")
         

@@ -1,48 +1,42 @@
 import json
 import logging
 from datetime import datetime
-from typing import Optional, AsyncGenerator
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, APIRouter
-from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
+from fastapi import HTTPException, APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-
 from config import settings
-from connection_manager import connectionManager
-from models import MessageType, EventType
+from cloud_message_handler import handle_control_message
 
 
 logger = logging.getLogger(__name__)
 
-drift_cloudcontrol_router = APIRouter()
+drift_cloudctrl_router = APIRouter()
 
 # 设备云控API
-@drift_cloudcontrol_router.post("/cloud-control/{device_id}")
-async def drift_cloudcontrol(device_id: str, request: dict):
+@drift_cloudctrl_router.post("/cloud-control/{device_id}")
+async def drift_cloud_control_handler(device_id: str, request: dict):
     try:
-        connection_id = await manager.get_device_connection(device_id)
-        if not connection_id:
-            raise ValueError(f"设备 {device_id} 未连接")
-
+        connection_id = device_id
         logger.debug(f"发送控制消息: {json.dumps(request, indent=2)}")
-        
         # 处理控制消息
-        response = await ControlMessageHandler.handle_control_message(connection_id, request)
-        
+        response = await handle_control_message(connection_id, request)
         logger.debug(f"控制命令响应: {json.dumps(response, indent=2)}")
         
-        if response and response.get("code") == -1:
+        if response and response.get("code"):
             raise HTTPException(
                 status_code=400,
                 detail=response.get("error_msg", "控制命令执行失败")
             )
-        
         return JSONResponse(content=response or {})
-        
     except Exception as e:
         logger.error(f"发送控制命令时出错: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+
+
+
+'''
 # 获取在线设备列表
 @app.get("/api/devices")
 async def get_online_devices(room_id: Optional[str] = None):
@@ -88,3 +82,4 @@ async def upload_screenshot_endpoint(data: dict):
             "code": -1,
             "error_msg": str(e)
         }
+'''
