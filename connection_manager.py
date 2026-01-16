@@ -101,11 +101,8 @@ class ConnectionManager:
         """设备连接"""
         await websocket.accept()
         
-        # 生成连接ID
-        connection_id = device_id
-        
         # 保存连接
-        self._active_connections[connection_id] = websocket
+        self._active_connections[device_id] = websocket
         
         # 初始化设备状态
         device_info = DeviceInfo(
@@ -113,18 +110,18 @@ class ConnectionManager:
         )
 
         # 保存设备状态
-        self._device_status[connection_id] = DeviceStatus(
+        self._device_status[device_id] = DeviceStatus(
             device_id=device_id,
             device_info=device_info,
             connection_time=datetime.now(),
             last_heartbeat=datetime.now(),
         )
         
-        logger.info(f"设备连接: {connection_id}")
+        logger.info(f"设备建立连接: {device_id}")
         
         # 发送连接确认
         await self.send_message(
-            connection_id,
+            device_id,
             {
                 "code": 0,
                 "type": MessageType.D2S_NOTIFY,
@@ -132,19 +129,18 @@ class ConnectionManager:
                 "data": {}
             }
         )
-        return connection_id
     
     # 断开设备连接
     async def disconnect(
         self,
-        connection_id: str,
+        device_id: str,
         code: int = 1000,
         reason: str = "正常关闭"
         ):
         """断开连接"""
-        if connection_id in self._active_connections:
+        if device_id in self._active_connections:
             try:
-                websocket = self._active_connections[connection_id]
+                websocket = self._active_connections[device_id]
                 # 检查连接状态
                 if websocket.client_state != WebSocketState.DISCONNECTED and websocket.application_state != WebSocketState.DISCONNECTED:
                     await websocket.close(code=code, reason=reason)
@@ -152,55 +148,55 @@ class ConnectionManager:
                 logger.error(f"关闭连接时出错: {e}")
             finally:
                 # 清理连接
-                self._cleanup_connection(connection_id)
+                self._cleanup_connection(device_id)
 
     # 清理连接数据
-    def _cleanup_connection(self, connection_id: str):
+    def _cleanup_connection(self, device_id: str):
         """清理连接数据（从活跃连接、设备状态和房间映射中移除）"""
-        if connection_id in self._active_connections:
-            del self._active_connections[connection_id]
+        if device_id in self._active_connections:
+            del self._active_connections[device_id]
         
-        if connection_id in self._device_status:
-            del self._device_status[connection_id]
+        if device_id in self._device_status:
+            del self._device_status[device_id]
         
-        logger.info(f"连接清理完成: {connection_id}")
+        logger.info(f"连接清理完成: {device_id}")
     
     # 心跳监控
-    async def update_heartbeat(self, connection_id: str):
+    async def update_heartbeat(self, device_id: str):
         """更新心跳时间"""
-        if connection_id in self._device_status:
-            self._device_status[connection_id].last_heartbeat = datetime.now()
+        if device_id in self._device_status:
+            self._device_status[device_id].last_heartbeat = datetime.now()
         else:
-            logger.error(f"更新心跳时间失败：设备连接 {connection_id} 不存在")
+            logger.error(f"更新心跳时间失败：设备连接 {device_id} 不存在")
     
     # 发送消息
-    async def send_message(self, connection_id: str, message: dict):
+    async def send_message(self, device_id: str, message: dict):
         """发送消息到指定连接"""
         logger.debug(f"发送消息: {json.dumps(message, indent=2, ensure_ascii=False)}")
-        if connection_id in self._active_connections:
+        if device_id in self._active_connections:
             try:
-                websocket = self._active_connections[connection_id]
+                websocket = self._active_connections[device_id]
                 await websocket.send_json(message)
             except Exception as e:
                 logger.error(f"发送消息失败: {e}")
-                await self.disconnect(connection_id)
+                await self.disconnect(device_id)
     
     # 获取设备信息
-    def get_device_status(self, connection_id: str) -> Optional[DeviceStatus]:
+    def get_device_status(self, device_id: str) -> Optional[DeviceStatus]:
         """获取设备信息"""
-        return self._device_status.get(connection_id)
+        return self._device_status.get(device_id)
     
     def get_device_list(self) -> List[DeviceStatus]:
         """获取所有活跃连接"""
-        return list(self._device_status.values())
+        return list(self._device_status.keys())
     
     # 更新设备信息
-    def update_device_info(self, connection_id: str, device_info: DeviceInfo):
+    def update_device_info(self, device_id: str, device_info: DeviceInfo):
         """更新设备信息"""
-        if connection_id in self._device_status:
-            self._device_status[connection_id].device_info = device_info
+        if device_id in self._device_status:
+            self._device_status[device_id].device_info = device_info
         else:
-            logger.error(f"更新设备信息失败：设备连接 {connection_id} 不存在")
+            logger.error(f"更新设备信息失败：设备连接 {device_id} 不存在")
 
 
 # 全局连接管理器

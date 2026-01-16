@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # 处理设备发送的消息
 async def handle_device_message(
     message_data: dict,
-    connection_id: str,
+    device_id: str,
     websocket: WebSocket
     ) -> Optional[dict]:
     """处理设备消息"""
@@ -24,11 +24,11 @@ async def handle_device_message(
         # 根据消息类型处理
         if message.type == MessageType.D2S_NOTIFY:
             return await handle_notify_message(
-                message, connection_id, websocket
+                message, device_id, websocket
             )
         elif message.type == MessageType.D2S_DEVICE_CONTROL:
             return await handle_device_control(
-                message, connection_id, websocket
+                message, device_id, websocket
             )
         else:
             logger.warning(f"不支持的消息类型: {message.type}")
@@ -56,51 +56,51 @@ async def handle_device_message(
 # 处理 notify 类型消息
 async def handle_notify_message(
     message: BaseMessage,
-    connection_id: str,
+    device_id: str,
     websocket: WebSocket
     ) -> Optional[dict]:
     # 更新心跳时间
-    await connectionManager.update_heartbeat(connection_id)
+    await connectionManager.update_heartbeat(device_id)
     
     if message.event == EventType.JOIN:
-        logger.debug(f"收到心跳: {connection_id}")
+        logger.debug(f"收到心跳: {device_id}")
         return None  # 心跳不需要响应
         
     elif message.event == EventType.DEVICE_INFO:
         # 设备信息上报
         return await handle_device_info(
-            message, connection_id
+            message, device_id
         )
     else:
         # 系统控制（control）结果通知
         if message.code:
-            message = f"设备 {connection_id} 处理 {message.event} 指令失败，错误码: {message.code}"
+            message = f"设备 {device_id} 处理 {message.event} 指令失败，错误码: {message.code}"
             logger.warning(message)
         else:
-            message = f"设备 {connection_id} 处理 {message.event} 指令成功"
+            message = f"设备 {device_id} 处理 {message.event} 指令成功"
             logger.info(message)
         return None  # 系统控制结果通知不需要响应
 
 # 处理 device_control 类型消息（设备主动请求）
 async def handle_device_control(
     message: BaseMessage,
-    connection_id: str,
+    device_id: str,
     websocket: WebSocket
     ) -> Optional[dict]:
     if message.event == EventType.GET_RTMP:
         # 获取 RTMP 地址
         return await get_rtmp_address(
-            message, connection_id
+            message, device_id
         )
     elif message.event == EventType.GET_SCREEN:
         # 获取截图地址
         return await get_screen_address(
-            message, connection_id
+            message, device_id
         )
     elif message.event == EventType.POWER_OFF:
         # 关机请求
         return await handle_power_off(
-            message, connection_id
+            message, device_id
         )
     else:
         logger.warning(f"未知的 device_control 事件: {message.event}")
@@ -116,15 +116,15 @@ async def handle_device_control(
 # 上报设备信息（主动/被动）
 async def handle_device_info(
     message: BaseMessage,
-    connection_id: str,
+    device_id: str,
     ) -> dict:
     """处理设备信息上报"""
     try:
         # 解析设备信息
         device_info = DeviceInfo(**message.data)
         # 更新管理器中的设备信息
-        connectionManager.update_device_info(connection_id, device_info)
-        logger.info(f"设备信息更新: {connection_id}")
+        connectionManager.update_device_info(device_id, device_info)
+        logger.info(f"设备信息更新: {device_id}")
         # 响应消息
         ret_msg = BaseMessage(
             type=MessageType.S2D_DEVICE_NOTIFY,
@@ -149,15 +149,15 @@ async def handle_device_info(
 # 处理获取 RTMP 地址请求
 async def get_rtmp_address(
     message: BaseMessage,
-    connection_id: str
+    device_id: str
     ) -> dict:
     try:
-        rtmp_url = f"rtmp://{settings.video_rtmp_host}:{settings.video_rtmp_port}/live/{connection_id}"
+        rtmp_url = f"rtmp://{settings.video_rtmp_host}:{settings.video_rtmp_port}/live/{device_id}"
         
         # 获取设备信息中的分辨率等设置
-        device_status = connectionManager.get_device_status(connection_id)
+        device_status = connectionManager.get_device_status(device_id)
         if not device_status:
-            raise ValueError(f"设备 {connection_id} 未连接")
+            raise ValueError(f"设备 {device_id} 未连接")
         device_info = device_status.device_info
         ret_msg = BaseMessage(
             type=MessageType.S2D_DEVICE_NOTIFY,
@@ -187,13 +187,13 @@ async def get_rtmp_address(
 # 获取截图上传地址请求（TODO：给一个真实的地址）
 async def get_screen_address(
     message: BaseMessage,
-    connection_id: str
+    device_id: str
     ) -> dict:
     """处理获取截图地址请求"""
     try:
-        device_status = connectionManager._device_status.get(connection_id)
+        device_status = connectionManager._device_status.get(device_id)
         if not device_status:
-            raise ValueError(f"设备 {connection_id} 未连接")
+            raise ValueError(f"设备 {device_id} 未连接")
         
         # 这里应该返回实际的上传地址
         upload_url = f"https://{settings.host}/api/upload/screenshot"
@@ -226,12 +226,12 @@ async def get_screen_address(
 # 处理关机请求
 async def handle_power_off(
     message: BaseMessage,
-    connection_id: str
+    device_id: str
     ) -> dict:
     try:
-        logger.info(f"设备请求关机: {connection_id}")
+        logger.info(f"设备请求关机: {device_id}")
         # 关闭设备连接
-        connectionManager.disconnect(connection_id)
+        connectionManager.disconnect(device_id)
         
         ret_msg = BaseMessage(
             type=MessageType.S2D_DEVICE_NOTIFY,

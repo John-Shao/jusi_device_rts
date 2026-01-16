@@ -9,7 +9,7 @@ from connection_manager import connectionManager
 logger = logging.getLogger(__name__)
 
 # 处理会议系统发送的控制消息
-async def handle_control_message(connection_id: str, request: dict) -> Optional[dict]:
+async def handle_control_message(device_id: str, request: dict) -> Optional[dict]:
     """处理控制消息"""
     try:
         # 解析控制消息
@@ -17,7 +17,7 @@ async def handle_control_message(connection_id: str, request: dict) -> Optional[
         
         handler = HANDLER_MAP.get(ctrl_msg.event)
         if handler:
-            return await handler(ctrl_msg, connection_id)
+            return await handler(ctrl_msg, device_id)
         else:
             raise ValueError(f"未知的控制事件: {ctrl_msg.event}")
             
@@ -35,7 +35,7 @@ async def handle_control_message(connection_id: str, request: dict) -> Optional[
 
 async def handle_device_info(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
     ) -> dict:
     """获取设备信息"""
 
@@ -46,7 +46,7 @@ async def handle_device_info(
         "deviceId": message.deviceId
     }
     
-    response = await connectionManager.send_message(connection_id, control_msg)
+    response = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if response else -1,
@@ -60,7 +60,7 @@ async def handle_device_info(
 
 async def handle_start_rtsp(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
     ) -> dict:
     """处理开始 RTMP 推流"""
     if "rtmp_url" not in message.data:
@@ -75,11 +75,11 @@ async def handle_start_rtsp(
         "data": message.data
     }
     
-    result = await connectionManager.send_message(connection_id, ctrl_msg)
+    result = await connectionManager.send_message(device_id, ctrl_msg)
 
     # 更新设备状态
     if result:
-        device_status = connectionManager._device_status.get(connection_id)
+        device_status = connectionManager._device_status.get(device_id)
         if device_status:
             device_status.video_pushing = True
             device_status.rtmp_url = message.data["rtmp_url"]
@@ -96,7 +96,7 @@ async def handle_start_rtsp(
 
 async def handle_stop_rtsp(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
     ) -> dict:
     """处理停止 RTMP 推流"""
     # 发送控制消息到设备
@@ -107,10 +107,10 @@ async def handle_stop_rtsp(
         "deviceId": message.deviceId
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     # 更新设备状态
     if result:
-        device_status = connectionManager._device_status.get(connection_id)
+        device_status = connectionManager._device_status.get(device_id)
         if device_status:
             device_status.video_pushing = False
 
@@ -126,7 +126,7 @@ async def handle_stop_rtsp(
 
 async def _handle_start_rtsp(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
     ) -> dict:
     """处理开始 RTSP 语音接收"""
     data = message.data or {}
@@ -144,9 +144,9 @@ async def _handle_start_rtsp(
         "data": data
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     # 更新设备状态
-    device_status = connectionManager._device_status.get(connection_id)
+    device_status = connectionManager._device_status.get(device_id)
     if device_status:
         device_status.audio_pulling = True
         device_status.rtsp_url = data["rtsp_url"]
@@ -163,7 +163,7 @@ async def _handle_start_rtsp(
 
 async def _handle_stop_rtsp(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
     ) -> dict:
     """处理停止 RTSP 语音接收"""
     
@@ -175,10 +175,10 @@ async def _handle_stop_rtsp(
         "deviceId": message.deviceId
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     # 更新设备状态
     if result:
-        device_status = connectionManager._device_status.get(connection_id)
+        device_status = connectionManager._device_status.get(device_id)
         if device_status:
             device_status.audio_pulling = False
 
@@ -194,11 +194,11 @@ async def _handle_stop_rtsp(
 
 async def handle_start_record(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理开始录像"""
     # 更新设备状态
-    device_status = connectionManager._device_status.get(connection_id)
+    device_status = connectionManager._device_status.get(device_id)
     if device_status:
         device_status.recording = True
     
@@ -210,7 +210,7 @@ async def handle_start_record(
         "deviceId": message.deviceId
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -224,11 +224,11 @@ async def handle_start_record(
 
 async def handle_stop_record(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理停止录像"""
     # 更新设备状态
-    device_status = connectionManager._device_status.get(connection_id)
+    device_status = connectionManager._device_status.get(device_id)
     if device_status:
         device_status.recording = False
     
@@ -240,7 +240,7 @@ async def handle_stop_record(
         "deviceId": message.deviceId
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -254,7 +254,7 @@ async def handle_stop_record(
 
 async def handle_dzoom(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理数字变焦控制"""
     data = message.data or {}
@@ -275,7 +275,7 @@ async def handle_dzoom(
         "data": data
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -290,7 +290,7 @@ async def handle_dzoom(
 
 async def handle_stream_res(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理设置分辨率"""
     data = message.data or {}
@@ -327,7 +327,7 @@ async def handle_stream_res(
         "data": {"stream_res": stream_res}
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -342,7 +342,7 @@ async def handle_stream_res(
 
 async def handle_stream_bitrate(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理设置比特率"""
     data = message.data or {}
@@ -363,7 +363,7 @@ async def handle_stream_bitrate(
         "data": {"stream_bitrate": bitrate}
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -378,7 +378,7 @@ async def handle_stream_bitrate(
 
 async def handle_stream_framerate(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理设置帧率"""
     data = message.data or {}
@@ -399,7 +399,7 @@ async def handle_stream_framerate(
         "data": {"stream_framerate": framerate}
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -414,7 +414,7 @@ async def handle_stream_framerate(
 
 async def handle_led(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理 LED 控制"""
     data = message.data or {}
@@ -435,7 +435,7 @@ async def handle_led(
         "data": {"led": led_value}
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -450,7 +450,7 @@ async def handle_led(
 
 async def handle_exposure(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理曝光设置"""
     data = message.data or {}
@@ -471,7 +471,7 @@ async def handle_exposure(
         "data": {"exposure": exposure_value}
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -486,7 +486,7 @@ async def handle_exposure(
 
 async def handle_filter(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理滤镜设置"""
     data = message.data or {}
@@ -507,7 +507,7 @@ async def handle_filter(
         "data": {"filter": filter_value}
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -522,7 +522,7 @@ async def handle_filter(
 
 async def handle_mic_sensitivity(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理麦克风灵敏度设置"""
     data = message.data or {}
@@ -543,7 +543,7 @@ async def handle_mic_sensitivity(
         "data": {"mic_sensitivity": sensitivity}
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -558,7 +558,7 @@ async def handle_mic_sensitivity(
 
 async def handle_fov(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理视场角设置"""
     data = message.data or {}
@@ -579,7 +579,7 @@ async def handle_fov(
         "data": {"fov": fov_value}
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -594,7 +594,7 @@ async def handle_fov(
 
 async def handle_screen(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理截图命令"""
     data = message.data or {}
@@ -613,7 +613,7 @@ async def handle_screen(
         "data": data
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else -1,
@@ -627,7 +627,7 @@ async def handle_screen(
 
 async def handle_power_off(
     message: ControlMessage,
-    connection_id: str
+    device_id: str
 ) -> dict:
     """处理关机命令"""
     # 发送控制消息到设备
@@ -638,7 +638,7 @@ async def handle_power_off(
         "deviceId": message.deviceId
     }
     
-    result = await connectionManager.send_message(connection_id, control_msg)
+    result = await connectionManager.send_message(device_id, control_msg)
     
     return {
         "code": 0 if result else 1,

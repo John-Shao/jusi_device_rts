@@ -1,3 +1,4 @@
+from urllib import request
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any
 from enum import Enum
@@ -119,3 +120,22 @@ class DeviceInfoMessage(BaseMessage):
 class ControlMessage(BaseMessage):
     """控制消息"""
     type: MessageType = MessageType.S2D_CONTROL
+
+# ================================== 云监视 ==================================
+
+class MonitorMsgType(str, Enum):
+    """云监视消息类型枚举"""
+    GET_DEVICE_LIST = "get_device_list"  # 获取设备列表
+    GET_DEVICE_STATUS = "get_device_status"  # 获取设备状态
+
+class MonitorRequest(BaseModel):
+    """云监视请求消息"""
+    type: str = Field("", description="消息类型")
+    data: Optional[Dict[str, Any]] = Field({}, description="数据")
+
+class MonitorResponse(BaseModel):
+    """云监视响应消息"""
+    code: int = Field(0, description="状态码")
+    info: str = Field("ok", description="状态信息")
+    type: str = Field("", description="消息类型")
+    data: Optional[Dict[str, Any]] = Field({}, description="数据")

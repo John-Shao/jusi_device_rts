@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from log_mw import RequestLoggingMiddleware
 from drift_websocket_server import drift_websocket_router
-from drift_cloudctrl_server import drift_cloudctrl_router
+from drift_control_server import drift_cloudctrl_router
 import uvicorn
 
 
@@ -41,8 +41,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("应用正在关闭...")
     
     # 关闭所有 WebSocket 连接
-    #for connection_id in list(manager.active_connections.keys()):
-    #    await manager.disconnect(connection_id, reason="服务器关闭")
+    #for device_id in list(manager.active_connections.keys()):
+    #    await manager.disconnect(device_id, reason="服务器关闭")
     
     logger.info("应用已关闭")
 
